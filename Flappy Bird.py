@@ -23,12 +23,13 @@ FPS = 60
 
 # Fonts
 font = pygame.font.SysFont("Arial", 30)
+game_over_font = pygame.font.SysFont("Arial", 24)
 
 # Initialize Weather System with a 30-second cycle
 weather = WeatherSystem(WIDTH, HEIGHT, FPS, cycle_seconds=30)
 
 # --- Bird sprite ---
-bird_file = "bird.png"  # make sure this file is in the same folder
+bird_file = "bird.png"
 if not os.path.exists(bird_file):
     print(f"ERROR: {bird_file} not found in {os.getcwd()}")
     pygame.quit()
@@ -44,13 +45,13 @@ jump_strength = -8
 
 # Pipe settings
 pipe_width = 70
-pipe_gap = 200
+pipe_gap = 180
 pipes = []
 pipe_speed = 3
 
 # Power-up settings
-POWERUP_TYPES = ['shield', 'double_points', 'gravity_plus', 'no_points']
-NEGATIVE_POWERUPS = ['gravity_plus', 'no_points']
+POWERUP_TYPES = ["shield", "double_points", "gravity_plus", "no_points"]
+NEGATIVE_POWERUPS = ["gravity_plus", "no_points"]
 
 powerups = []
 powerup_radius = 15
@@ -69,24 +70,36 @@ pipe_img = pygame.image.load(pipe_file).convert_alpha()
 background_img = pygame.image.load(background_file).convert()
 background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
 
+
 # --- Functions ---
 def draw_bird(x, y, shielded=False):
-    screen.blit(bird_img, (x - bird_img.get_width()//2, y - bird_img.get_height()//2))
+    screen.blit(
+        bird_img, (x - bird_img.get_width() // 2, y - bird_img.get_height() // 2)
+    )
     if shielded:
         shield_radius = max(bird_img.get_width(), bird_img.get_height()) // 2 + 10
-        shield_surface = pygame.Surface((shield_radius*2, shield_radius*2), pygame.SRCALPHA)
-        pygame.draw.circle(shield_surface, (0, 150, 255, 100), (shield_radius, shield_radius), shield_radius)
+        shield_surface = pygame.Surface(
+            (shield_radius * 2, shield_radius * 2), pygame.SRCALPHA
+        )
+        pygame.draw.circle(
+            shield_surface,
+            (0, 150, 255, 100),
+            (shield_radius, shield_radius),
+            shield_radius,
+        )
         screen.blit(shield_surface, (x - shield_radius, y - shield_radius))
+
 
 def draw_pipes(pipes):
     for pipe in pipes:
-        # Top pipe (rotated 180 degrees)
+        # Top pipe
         top_img = pygame.transform.scale(pipe_img, (pipe[0].width, pipe[0].height))
         top_img_rotated = pygame.transform.rotate(top_img, 180)
         screen.blit(top_img_rotated, (pipe[0].x, pipe[0].y))
         # Bottom pipe
         bottom_img = pygame.transform.scale(pipe_img, (pipe[1].width, pipe[1].height))
         screen.blit(bottom_img, (pipe[1].x, pipe[1].y))
+
 
 def check_collision(bird_rect, pipes):
     if bird_rect.top <= 0 or bird_rect.bottom >= HEIGHT:
@@ -96,21 +109,44 @@ def check_collision(bird_rect, pipes):
             return True
     return False
 
+
 def show_score(score):
     text = font.render(f"Score: {score}", True, BLACK)
     screen.blit(text, (10, 10))
 
+
+def reset_game():
+    global \
+        bird_y, \
+        bird_velocity, \
+        pipes, \
+        score, \
+        active_powerup, \
+        powerups, \
+        frame, \
+        game_over
+    bird_y = HEIGHT // 2
+    bird_velocity = 0
+    pipes = []
+    score = 0
+    active_powerup = None
+    powerups = []
+    frame = 0
+    game_over = False
+
+
 # --- Game loop ---
 running = True
 frame = 0
+game_over = False
+
 while running:
     # Update weather system
     weather.update()
 
     # Draw background image
     screen.blit(background_img, (0, 0))
-    # Draw weather effects (clouds, rain)
-    weather.draw(screen)
+    weather.draw(screen)  # Draw weather effects
 
     # Event loop
     for event in pygame.event.get():
@@ -118,101 +154,128 @@ while running:
             pygame.quit()
             sys.exit()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if active_powerup == 'jump_boost':
+            if event.key == pygame.K_SPACE and not game_over:
+                if active_powerup == "jump_boost":
                     bird_velocity = jump_strength * 1.5
                 else:
                     bird_velocity = jump_strength
+            if game_over and event.key == pygame.K_r:
+                reset_game()
 
-    # Bird movement
-    current_gravity = gravity * 1.5 if active_powerup == 'gravity_plus' else gravity
-    bird_velocity += current_gravity
-    bird_y += bird_velocity
-    bird_rect = bird_img.get_rect(center=(bird_x, bird_y))
+    if not game_over:
+        # Bird movement
+        current_gravity = gravity * 1.5 if active_powerup == "gravity_plus" else gravity
+        bird_velocity += current_gravity
+        bird_y += bird_velocity
+        bird_rect = bird_img.get_rect(center=(bird_x, bird_y))
 
-    # Pipes
-    frame += 1
-    if frame % 90 == 0:
-        gap_y = random.randint(100, HEIGHT - 100)
-        top_pipe = pygame.Rect(WIDTH, 0, pipe_width, gap_y - pipe_gap//2)
-        bottom_pipe = pygame.Rect(WIDTH, gap_y + pipe_gap//2, pipe_width, HEIGHT - gap_y)
-        pipes.append((top_pipe, bottom_pipe))
+        # Pipes
+        frame += 1
+        if frame % 90 == 0:
+            gap_y = random.randint(100, HEIGHT - 100)
+            top_pipe = pygame.Rect(WIDTH, 0, pipe_width, gap_y - pipe_gap // 2)
+            bottom_pipe = pygame.Rect(
+                WIDTH, gap_y + pipe_gap // 2, pipe_width, HEIGHT - gap_y
+            )
+            pipes.append((top_pipe, bottom_pipe))
 
-    # Power-up spawn
-    if frame % 300 == 0:
-        powerup_type = random.choice(POWERUP_TYPES)
-        powerup_y = random.randint(100, HEIGHT - 100)
-        powerups.append({
-            'type': powerup_type,
-            'rect': pygame.Rect(WIDTH, powerup_y, powerup_radius*2, powerup_radius*2)
-        })
+        # Power-up spawn
+        if frame % 300 == 0:
+            powerup_type = random.choice(POWERUP_TYPES)
+            powerup_y = random.randint(100, HEIGHT - 100)
+            powerups.append(
+                {
+                    "type": powerup_type,
+                    "rect": pygame.Rect(
+                        WIDTH, powerup_y, powerup_radius * 2, powerup_radius * 2
+                    ),
+                }
+            )
 
-    # Move pipes
-    new_pipes = []
-    for pipe in pipes:
-        top, bottom = pipe
-        top.x -= pipe_speed
-        bottom.x -= pipe_speed
-        if top.x + pipe_width > 0:
-            new_pipes.append((top, bottom))
-        else:
-            if active_powerup == 'no_points':
-                score += 0
-            elif active_powerup == 'double_points':
-                score += 2
+        # Move pipes
+        new_pipes = []
+        for pipe in pipes:
+            top, bottom = pipe
+            top.x -= pipe_speed
+            bottom.x -= pipe_speed
+            if top.x + pipe_width > 0:
+                new_pipes.append((top, bottom))
             else:
-                score += 1
-    pipes = new_pipes
+                if active_powerup == "no_points":
+                    score += 0
+                elif active_powerup == "double_points":
+                    score += 2
+                else:
+                    score += 1
+        pipes = new_pipes
 
-    # Move power-ups
-    new_powerups = []
-    for p in powerups:
-        p['rect'].x -= pipe_speed
-        if p['rect'].x + powerup_radius*2 > 0:
-            new_powerups.append(p)
-    powerups = new_powerups
+        # Move power-ups
+        new_powerups = []
+        for p in powerups:
+            p["rect"].x -= pipe_speed
+            if p["rect"].x + powerup_radius * 2 > 0:
+                new_powerups.append(p)
+        powerups = new_powerups
+
+        # Power-up collision
+        if not active_powerup:
+            for p in powerups:
+                if p["rect"].colliderect(bird_rect):
+                    active_powerup = p["type"]
+                    powerup_timer = powerup_duration
+                    powerups.remove(p)
+                    break
+
+        # Power-up timer
+        if active_powerup:
+            powerup_timer -= 1
+            if powerup_timer <= 0:
+                active_powerup = None
+
+        # Collision
+        if active_powerup != "shield" and check_collision(bird_rect, pipes):
+            game_over = True
 
     # Draw everything
-    draw_bird(bird_x, bird_y, shielded=(active_powerup == 'shield'))
+    draw_bird(bird_x, bird_y, shielded=(active_powerup == "shield"))
     draw_pipes(pipes)
     for p in powerups:
-        if p['type'] == 'double_points':
+        if p["type"] == "double_points":
             color = (255, 215, 0)
-        elif p['type'] == 'shield':
+        elif p["type"] == "shield":
             color = (0, 255, 255)
-        elif p['type'] == 'gravity_plus':
-            color = (255, 0, 0)  # Negative powerup: red
-        elif p['type'] == 'no_points':
-            color = (128, 0, 128)  # Negative powerup: purple
-        pygame.draw.circle(screen, color, (p['rect'].x + powerup_radius, p['rect'].y + powerup_radius), powerup_radius)
+        elif p["type"] == "gravity_plus":
+            color = (255, 0, 0)
+        elif p["type"] == "no_points":
+            color = (128, 0, 128)
+        pygame.draw.circle(
+            screen,
+            color,
+            (p["rect"].x + powerup_radius, p["rect"].y + powerup_radius),
+            powerup_radius,
+        )
     show_score(score)
+
     if active_powerup:
         effect_text = font.render(
             f"Powerup: {active_powerup}",
             True,
-            (255, 0, 0) if active_powerup in NEGATIVE_POWERUPS else (0, 128, 0)
+            (255, 0, 0) if active_powerup in NEGATIVE_POWERUPS else (0, 128, 0),
         )
         screen.blit(effect_text, (10, 50))
 
-    # Power-up collision
-    if not active_powerup:
-        for p in powerups:
-            if p['rect'].colliderect(bird_rect):
-                active_powerup = p['type']
-                powerup_timer = powerup_duration
-                powerups.remove(p)
-                break
-
-    # Power-up timer
-    if active_powerup:
-        powerup_timer -= 1
-        if powerup_timer <= 0:
-            active_powerup = None
-
-    # Collision
-    if active_powerup != 'shield' and check_collision(bird_rect, pipes):
-        pygame.quit()
-        sys.exit()
+    # Game Over text
+    if game_over:
+        over_text = game_over_font.render(
+            "Game Over! Press R to restart", True, (255, 0, 0)
+        )
+        screen.blit(
+            over_text,
+            (
+                WIDTH // 2 - over_text.get_width() // 2,
+                HEIGHT // 2 - over_text.get_height() // 2,
+            ),
+        )
 
     # Update display
     pygame.display.flip()
