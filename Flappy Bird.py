@@ -11,7 +11,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Flappy Bird")
 
 # Colors
-WHITE = (255, 255, 255)
+WHITE = (255, 255, 255)  
 BLACK = (0, 0, 0)
 SKY = (135, 206, 235)
 GREEN = (0, 200, 0)
@@ -23,7 +23,7 @@ FPS = 60
 # Bird settings
 bird_x = 50
 bird_y = HEIGHT // 2
-bird_radius = 20  # Add bird radius for collision and drawing
+bird_radius = 15
 gravity = 0.5
 bird_velocity = 0
 jump_strength = -8
@@ -33,14 +33,6 @@ pipe_width = 70
 pipe_gap = 150
 pipes = []
 pipe_speed = 3
-
-# Power-up settings
-POWERUP_TYPES = ['shield', 'double_points', 'jump_boost']
-powerups = []
-powerup_radius = 15
-powerup_duration = 180  # frames (~3 seconds)
-active_powerup = None
-powerup_timer = 0
 
 # Score
 score = 0
@@ -67,6 +59,19 @@ def show_score(score):
     text = font.render(f"Score: {score}", True, BLACK)
     screen.blit(text, (10, 10))
 
+# Score saving logic
+def save_score(new_score, filename="scores.txt", top_n=5):
+    try:
+        with open(filename, "r") as f:
+            scores = [int(line.strip()) for line in f if line.strip().isdigit()]
+    except FileNotFoundError:
+        scores = []
+    scores.append(new_score)
+    scores = sorted(scores, reverse=True)[:top_n]
+    with open(filename, "w") as f:
+        for s in scores:
+            f.write(f"{s}\n")
+ 
 # Game loop
 running = True
 frame = 0
@@ -80,7 +85,7 @@ while running:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                bird_velocity = jump_strength if active_powerup != 'jump_boost' else jump_strength * 1.5
+                bird_velocity = jump_strength
 
     # Bird movement
     bird_velocity += gravity
@@ -94,13 +99,6 @@ while running:
         bottom_pipe = pygame.Rect(WIDTH, gap_y + pipe_gap//2, pipe_width, HEIGHT - gap_y)
         pipes.append((top_pipe, bottom_pipe))
 
-    # Power-up spawn
-    if frame % 300 == 0:
-        powerup_type = random.choice(POWERUP_TYPES)
-        powerup_y = random.randint(100, HEIGHT - 100)
-        powerups.append({'type': powerup_type, 'rect': pygame.Rect(WIDTH, powerup_y, powerup_radius*2, powerup_radius*2)})
-
-    # Move pipes and power-ups
     new_pipes = []
     for pipe in pipes:
         top, bottom = pipe
@@ -109,50 +107,19 @@ while running:
         if top.x + pipe_width > 0:
             new_pipes.append((top, bottom))
         else:
-            score += 2 if active_powerup == 'double_points' else 1
+            score += 1
     pipes = new_pipes
-
-    new_powerups = []
-    for p in powerups:
-        p['rect'].x -= pipe_speed
-        if p['rect'].x + powerup_radius*2 > 0:
-            new_powerups.append(p)
-    powerups = new_powerups
 
     # Draw
     draw_bird(bird_x, bird_y)
     draw_pipes(pipes)
-    for p in powerups:
-        color = (255, 215, 0) if p['type'] == 'double_points' else (0, 255, 255) if p['type'] == 'shield' else (255, 0, 255)
-        pygame.draw.circle(screen, color, (p['rect'].x + powerup_radius, p['rect'].y + powerup_radius), powerup_radius)
     show_score(score)
-    if active_powerup:
-        effect_text = font.render(f"Powerup: {active_powerup}", True, (255,0,0))
-        screen.blit(effect_text, (10, 50))
-
-    # Power-up collision
-    if not active_powerup:
-        for p in powerups:
-            bird_rect = pygame.Rect(bird_x - bird_radius, bird_y - bird_radius, bird_radius*2, bird_radius*2)
-            if p['rect'].colliderect(bird_rect):
-                active_powerup = p['type']
-                powerup_timer = powerup_duration
-                powerups.remove(p)
-                break
-
-    # Power-up timer
-    if active_powerup:
-        powerup_timer -= 1
-        if powerup_timer <= 0:
-            active_powerup = None
 
     # Collision
-        if active_powerup != 'shield' and check_collision(bird_y, pipes):
-            # Write score to file before closing
-            with open("score.txt", "w") as f:
-                f.write(str(score))
-            pygame.quit()
-            sys.exit()
+    if check_collision(bird_y, pipes):
+        save_score(score)
+        pygame.quit()
+        sys.exit()
 
     # Update display
     pygame.display.flip()
