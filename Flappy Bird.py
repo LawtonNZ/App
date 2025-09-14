@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 import os
+from weather import WeatherSystem  # Import the weather module
 
 # Initialize pygame
 pygame.init()
@@ -14,7 +15,6 @@ pygame.display.set_caption("Flappy Bird")
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-SKY = (135, 206, 235)
 GREEN = (0, 200, 0)
 
 # Clock
@@ -23,6 +23,9 @@ FPS = 60
 
 # Fonts
 font = pygame.font.SysFont("Arial", 30)
+
+# Initialize Weather System with a 30-second cycle
+weather = WeatherSystem(WIDTH, HEIGHT, FPS, cycle_seconds=30)
 
 # --- Bird sprite ---
 bird_file = "bird.png"  # make sure this file is in the same folder
@@ -46,7 +49,6 @@ pipes = []
 pipe_speed = 3
 
 # Power-up settings
-
 POWERUP_TYPES = ['shield', 'double_points', 'gravity_plus', 'no_points']
 NEGATIVE_POWERUPS = ['gravity_plus', 'no_points']
 
@@ -84,7 +86,14 @@ def show_score(score):
 running = True
 frame = 0
 while running:
-    screen.fill(SKY)
+    # Update weather system
+    weather.update()
+
+    # Fill background with dynamic weather color
+    screen.fill(weather.get_background_color())
+
+    # Draw weather effects (clouds, rain)
+    weather.draw(screen)
 
     # Event loop
     for event in pygame.event.get():
@@ -98,11 +107,9 @@ while running:
                 else:
                     bird_velocity = jump_strength
 
-
     # Bird movement
     current_gravity = gravity * 1.5 if active_powerup == 'gravity_plus' else gravity
     bird_velocity += current_gravity
-
     bird_y += bird_velocity
     bird_rect = bird_img.get_rect(center=(bird_x, bird_y))
 
@@ -163,8 +170,11 @@ while running:
         pygame.draw.circle(screen, color, (p['rect'].x + powerup_radius, p['rect'].y + powerup_radius), powerup_radius)
     show_score(score)
     if active_powerup:
-        effect_text = font.render(f"Powerup: {active_powerup}", True, (255,0,0) if active_powerup in NEGATIVE_POWERUPS else (0,128,0))
-
+        effect_text = font.render(
+            f"Powerup: {active_powerup}",
+            True,
+            (255, 0, 0) if active_powerup in NEGATIVE_POWERUPS else (0, 128, 0)
+        )
         screen.blit(effect_text, (10, 50))
 
     # Power-up collision
@@ -190,4 +200,3 @@ while running:
     # Update display
     pygame.display.flip()
     clock.tick(FPS)
- 
