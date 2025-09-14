@@ -30,12 +30,13 @@ jump_strength = -8
 
 # Pipe settings
 pipe_width = 70
-pipe_gap = 150
+pipe_gap = 200
 pipes = []
 pipe_speed = 3
 
 # Power-up settings
-POWERUP_TYPES = ['shield', 'double_points']  # Removed 'jump_boost'
+POWERUP_TYPES = ['shield', 'double_points', 'gravity_plus', 'no_points']
+NEGATIVE_POWERUPS = ['gravity_plus', 'no_points']
 powerups = []
 powerup_radius = 15
 powerup_duration = 180  # frames (~3 seconds)
@@ -83,7 +84,8 @@ while running:
                 bird_velocity = jump_strength  # Removed jump boost logic
 
     # Bird movement
-    bird_velocity += gravity
+    current_gravity = gravity * 1.5 if active_powerup == 'gravity_plus' else gravity
+    bird_velocity += current_gravity
     bird_y += bird_velocity
 
     # Pipes
@@ -109,7 +111,12 @@ while running:
         if top.x + pipe_width > 0:
             new_pipes.append((top, bottom))
         else:
-            score += 2 if active_powerup == 'double_points' else 1
+            if active_powerup == 'no_points':
+                score += 0
+            elif active_powerup == 'double_points':
+                score += 2
+            else:
+                score += 1
     pipes = new_pipes
 
     new_powerups = []
@@ -123,11 +130,18 @@ while running:
     draw_bird(bird_x, bird_y)
     draw_pipes(pipes)
     for p in powerups:
-        color = (255, 215, 0) if p['type'] == 'double_points' else (0, 255, 255)  # Removed jump boost color
+        if p['type'] == 'double_points':
+            color = (255, 215, 0)
+        elif p['type'] == 'shield':
+            color = (0, 255, 255)
+        elif p['type'] == 'gravity_plus':
+            color = (255, 0, 0)  # Negative powerup: red
+        elif p['type'] == 'no_points':
+            color = (128, 0, 128)  # Negative powerup: purple
         pygame.draw.circle(screen, color, (p['rect'].x + powerup_radius, p['rect'].y + powerup_radius), powerup_radius)
     show_score(score)
     if active_powerup:
-        effect_text = font.render(f"Powerup: {active_powerup}", True, (255,0,0))
+        effect_text = font.render(f"Powerup: {active_powerup}", True, (255,0,0) if active_powerup in NEGATIVE_POWERUPS else (0,128,0))
         screen.blit(effect_text, (10, 50))
 
     # Power-up collision
