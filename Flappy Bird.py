@@ -61,14 +61,26 @@ powerup_timer = 0
 # Score
 score = 0
 
+# --- Load images ---
+pipe_file = "pipe.png"
+background_file = "background.png"
+
+pipe_img = pygame.image.load(pipe_file).convert_alpha()
+background_img = pygame.image.load(background_file).convert()
+background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+
 # --- Functions ---
 def draw_bird(x, y):
     screen.blit(bird_img, (x - bird_img.get_width()//2, y - bird_img.get_height()//2))
 
 def draw_pipes(pipes):
     for pipe in pipes:
-        pygame.draw.rect(screen, GREEN, pipe[0])  # top pipe
-        pygame.draw.rect(screen, GREEN, pipe[1])  # bottom pipe
+        # Top pipe
+        top_img = pygame.transform.scale(pipe_img, (pipe[0].width, pipe[0].height))
+        screen.blit(top_img, (pipe[0].x, pipe[0].y))
+        # Bottom pipe
+        bottom_img = pygame.transform.scale(pipe_img, (pipe[1].width, pipe[1].height))
+        screen.blit(bottom_img, (pipe[1].x, pipe[1].y))
 
 def check_collision(bird_rect, pipes):
     if bird_rect.top <= 0 or bird_rect.bottom >= HEIGHT:
@@ -89,9 +101,8 @@ while running:
     # Update weather system
     weather.update()
 
-    # Fill background with dynamic weather color
-    screen.fill(weather.get_background_color())
-
+    # Draw background image
+    screen.blit(background_img, (0, 0))
     # Draw weather effects (clouds, rain)
     weather.draw(screen)
 
