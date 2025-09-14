@@ -75,9 +75,10 @@ def draw_bird(x, y):
 
 def draw_pipes(pipes):
     for pipe in pipes:
-        # Top pipe
+        # Top pipe (rotated 180 degrees)
         top_img = pygame.transform.scale(pipe_img, (pipe[0].width, pipe[0].height))
-        screen.blit(top_img, (pipe[0].x, pipe[0].y))
+        top_img_rotated = pygame.transform.rotate(top_img, 180)
+        screen.blit(top_img_rotated, (pipe[0].x, pipe[0].y))
         # Bottom pipe
         bottom_img = pygame.transform.scale(pipe_img, (pipe[1].width, pipe[1].height))
         screen.blit(bottom_img, (pipe[1].x, pipe[1].y))
