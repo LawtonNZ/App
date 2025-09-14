@@ -6,7 +6,7 @@ import sys
 pygame.init()
 
 # Screen settings
-WIDTH, HEIGHT = 400, 600
+WIDTH, HEIGH T = 400, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Flappy Bird")
 
