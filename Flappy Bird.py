@@ -70,8 +70,13 @@ background_img = pygame.image.load(background_file).convert()
 background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
 
 # --- Functions ---
-def draw_bird(x, y):
+def draw_bird(x, y, shielded=False):
     screen.blit(bird_img, (x - bird_img.get_width()//2, y - bird_img.get_height()//2))
+    if shielded:
+        shield_radius = max(bird_img.get_width(), bird_img.get_height()) // 2 + 10
+        shield_surface = pygame.Surface((shield_radius*2, shield_radius*2), pygame.SRCALPHA)
+        pygame.draw.circle(shield_surface, (0, 150, 255, 100), (shield_radius, shield_radius), shield_radius)
+        screen.blit(shield_surface, (x - shield_radius, y - shield_radius))
 
 def draw_pipes(pipes):
     for pipe in pipes:
@@ -167,7 +172,7 @@ while running:
     powerups = new_powerups
 
     # Draw everything
-    draw_bird(bird_x, bird_y)
+    draw_bird(bird_x, bird_y, shielded=(active_powerup == 'shield'))
     draw_pipes(pipes)
     for p in powerups:
         if p['type'] == 'double_points':
