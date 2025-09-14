@@ -48,10 +48,6 @@ pipe_gap = 200
 pipes = []
 pipe_speed = 3
 
-# Power-up settings
-POWERUP_TYPES = ['shield', 'double_points', 'gravity_plus', 'no_points']
-NEGATIVE_POWERUPS = ['gravity_plus', 'no_points']
-
 powerups = []
 powerup_radius = 15
 powerup_duration = 180  # frames (~3 seconds)
@@ -82,7 +78,6 @@ def show_score(score):
     text = font.render(f"Score: {score}", True, BLACK)
     screen.blit(text, (10, 10))
 
-# --- Game loop ---
 running = True
 frame = 0
 while running:
@@ -101,101 +96,13 @@ while running:
             pygame.quit()
             sys.exit()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                if active_powerup == 'jump_boost':
-                    bird_velocity = jump_strength * 1.5
-                else:
-                    bird_velocity = jump_strength
 
-    # Bird movement
-    current_gravity = gravity * 1.5 if active_powerup == 'gravity_plus' else gravity
-    bird_velocity += current_gravity
-    bird_y += bird_velocity
-    bird_rect = bird_img.get_rect(center=(bird_x, bird_y))
-
-    # Pipes
-    frame += 1
-    if frame % 90 == 0:
-        gap_y = random.randint(100, HEIGHT - 100)
-        top_pipe = pygame.Rect(WIDTH, 0, pipe_width, gap_y - pipe_gap//2)
-        bottom_pipe = pygame.Rect(WIDTH, gap_y + pipe_gap//2, pipe_width, HEIGHT - gap_y)
-        pipes.append((top_pipe, bottom_pipe))
-
-    # Power-up spawn
-    if frame % 300 == 0:
-        powerup_type = random.choice(POWERUP_TYPES)
-        powerup_y = random.randint(100, HEIGHT - 100)
-        powerups.append({
-            'type': powerup_type,
-            'rect': pygame.Rect(WIDTH, powerup_y, powerup_radius*2, powerup_radius*2)
-        })
-
-    # Move pipes
-    new_pipes = []
-    for pipe in pipes:
-        top, bottom = pipe
-        top.x -= pipe_speed
-        bottom.x -= pipe_speed
-        if top.x + pipe_width > 0:
-            new_pipes.append((top, bottom))
-        else:
-            if active_powerup == 'no_points':
-                score += 0
-            elif active_powerup == 'double_points':
-                score += 2
-            else:
-                score += 1
-    pipes = new_pipes
-
-    # Move power-ups
-    new_powerups = []
-    for p in powerups:
-        p['rect'].x -= pipe_speed
-        if p['rect'].x + powerup_radius*2 > 0:
-            new_powerups.append(p)
-    powerups = new_powerups
 
     # Draw everything
     draw_bird(bird_x, bird_y)
     draw_pipes(pipes)
     for p in powerups:
-        if p['type'] == 'double_points':
-            color = (255, 215, 0)
-        elif p['type'] == 'shield':
-            color = (0, 255, 255)
-        elif p['type'] == 'gravity_plus':
-            color = (255, 0, 0)  # Negative powerup: red
-        elif p['type'] == 'no_points':
-            color = (128, 0, 128)  # Negative powerup: purple
-        pygame.draw.circle(screen, color, (p['rect'].x + powerup_radius, p['rect'].y + powerup_radius), powerup_radius)
-    show_score(score)
-    if active_powerup:
-        effect_text = font.render(
-            f"Powerup: {active_powerup}",
-            True,
-            (255, 0, 0) if active_powerup in NEGATIVE_POWERUPS else (0, 128, 0)
-        )
-        screen.blit(effect_text, (10, 50))
 
-    # Power-up collision
-    if not active_powerup:
-        for p in powerups:
-            if p['rect'].colliderect(bird_rect):
-                active_powerup = p['type']
-                powerup_timer = powerup_duration
-                powerups.remove(p)
-                break
-
-    # Power-up timer
-    if active_powerup:
-        powerup_timer -= 1
-        if powerup_timer <= 0:
-            active_powerup = None
-
-    # Collision
-    if active_powerup != 'shield' and check_collision(bird_rect, pipes):
-        pygame.quit()
-        sys.exit()
 
     # Update display
     pygame.display.flip()
