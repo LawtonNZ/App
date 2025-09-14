@@ -147,9 +147,12 @@ while running:
             active_powerup = None
 
     # Collision
-    if active_powerup != 'shield' and check_collision(bird_y, pipes):
-        pygame.quit()
-        sys.exit()
+        if active_powerup != 'shield' and check_collision(bird_y, pipes):
+            # Write score to file before closing
+            with open("score.txt", "w") as f:
+                f.write(str(score))
+            pygame.quit()
+            sys.exit()
 
     # Update display
     pygame.display.flip()
