@@ -35,7 +35,7 @@ pipes = []
 pipe_speed = 3
 
 # Power-up settings
-POWERUP_TYPES = ['shield', 'double_points', 'jump_boost']
+POWERUP_TYPES = ['shield', 'double_points']  # Removed 'jump_boost'
 powerups = []
 powerup_radius = 15
 powerup_duration = 180  # frames (~3 seconds)
@@ -80,7 +80,7 @@ while running:
             sys.exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                bird_velocity = jump_strength if active_powerup != 'jump_boost' else jump_strength * 1.5
+                bird_velocity = jump_strength  # Removed jump boost logic
 
     # Bird movement
     bird_velocity += gravity
@@ -123,7 +123,7 @@ while running:
     draw_bird(bird_x, bird_y)
     draw_pipes(pipes)
     for p in powerups:
-        color = (255, 215, 0) if p['type'] == 'double_points' else (0, 255, 255) if p['type'] == 'shield' else (255, 0, 255)
+        color = (255, 215, 0) if p['type'] == 'double_points' else (0, 255, 255)  # Removed jump boost color
         pygame.draw.circle(screen, color, (p['rect'].x + powerup_radius, p['rect'].y + powerup_radius), powerup_radius)
     show_score(score)
     if active_powerup:
